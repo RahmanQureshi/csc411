@@ -8,8 +8,8 @@ import math
 from collections import defaultdict
 
 vectorizer = sklearn.feature_extraction.text.CountVectorizer()
-default_max_depths = range(1,10)
-default_criterions = ['entropy']
+default_max_depths = range(1,5)
+default_criterions = ['gini', 'entropy']
 
 def log2(x):
     return math.log(x)/math.log(2)
@@ -49,7 +49,7 @@ def select_model(X, Y, X_validate, Y_validate, k=2, max_depths=default_max_depth
             tree.fit(X,Y)
             accuracy = validate(tree, X_validate, Y_validate)
             heapq.heappush(best_trees, (-accuracy, tree))
-            print("Tree with max depth=%d, criterion=%s: accuracy=%f" % (depth, criteria, accuracy))
+            print("Tree with max depth=%d, criterion=%s: validation_score=%f" % (depth, criteria, accuracy))
     trees = []
     for i in range(0,k):
         trees.append(heapq.heappop(best_trees))
@@ -100,8 +100,6 @@ def compute_information_gain(X, Y, feature, split):
     X_left, Y_left, X_right, Y_right = splitX(X, Y, feature, split)
     leftEntropy = H(Y_left)
     rightEntropy = H(Y_right)
-    print(len(Y_left))
-    print(len(Y_right))
     IG = rootEntropy - float(len(Y_left))/len(Y)*leftEntropy - float(len(Y_right))/len(Y)*rightEntropy 
     return IG
 
@@ -112,7 +110,11 @@ def main():
     print(top_trees)
     visualize_tree(top_trees[0][1], 'tree1')
     visualize_tree(top_trees[1][1], 'tree2')
-    split_words = ['trump', 'korea', 'hillary', 'the', 'economic', 'and']
+    print("Top tree test set score=%f" % (validate(top_trees[0][1], X_test, Y_test)))
+    print("Second tree test set score=%f" % (validate(top_trees[1][1], X_test, Y_test)))
+
+    
+    split_words = ['trump', 'korea', 'hillary', 'the', 'economic', 'and', 'election', 'america', 'clean', 'black']
     for word in split_words:
         featureIndex = get_feature_index(word)
         print("Information gain by splitting on %s:" % (vectorizer.get_feature_names()[featureIndex]))
