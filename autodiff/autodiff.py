@@ -3,6 +3,16 @@ from collections import deque
 from collections import defaultdict
 from toposort import toposort_flatten
 
+# All VJP functions accept v, the derivative up to the "current" node,
+# the parent node to which we are propogating, and all the inputs/parents of the "current" node
+def sin_vjp(v, parent, parents):
+    return np.multiply(v, np.cos(parent.value))
+
+def mult_vjp(v, parent, parents):
+    if parent == parents[0]:
+        return v*parents[1].value
+    return v*parents[0].value
+
 class Node:
 
     def __init__(self, value, vjps, parents):
@@ -12,21 +22,18 @@ class Node:
         self.value = value
         self.vjps = vjps
         self.parents = parents
-        self.v = None # derivative of output with respect to this node. Needs to be set by a parent.
+        self.v = 0 
 
     def __str__(self):
         return self.value.__str__()
 
     def __mul__(self, other):
-
-        pass        
+        # TODO: this is not good, we are effectively duplicating information
+        return Node(self.value*other.value, [mult_vjp, mult_vjp], [self, other])
 
     def prop(self):
         for parent, vjp in zip(self.parents, self.vjps):
-            parent.v = vjp(self.v, parent.value)
-
-def sin_vjp(v, x):
-    return np.multiply(v, np.cos(x))
+            parent.v += vjp(self.v, parent, self.parents)
 
 def sin(x):
     if x.__class__ == Node:
@@ -74,5 +81,5 @@ def grad(fct, x):
     return backprop(end_node, start_node)
 
 if __name__ == "__main__":
-    gradVal = grad(sinsinsin, [0.2])
+    gradVal = grad(sinsquared, [0.2])
     print(gradVal)
