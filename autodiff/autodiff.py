@@ -29,6 +29,13 @@ class Node:
 
     def __mul__(self, other):
         # TODO: this is not good, we are effectively duplicating information
+        if other.__class__ != Node:
+            other = Node(other, None, None)
+        return Node(self.value*other.value, [mult_vjp, mult_vjp], [self, other])
+
+    def __rmul__(self, other):
+        if other.__class__ != Node:
+            other = Node(other, None, None)
         return Node(self.value*other.value, [mult_vjp, mult_vjp], [self, other])
 
     def prop(self):
@@ -49,6 +56,9 @@ def sinsinsin(x):
 
 def sinsquared(x):
     return sin(x)*sin(x)
+
+def threetimessin(x):
+    return 3*sin(x)
 
 def buildGraph(end_node):
     G = defaultdict(set)
@@ -81,5 +91,5 @@ def grad(fct, x):
     return backprop(end_node, start_node)
 
 if __name__ == "__main__":
-    gradVal = grad(sinsquared, [0.2])
+    gradVal = grad(threetimessin, [0.2])
     print(gradVal)
