@@ -6,6 +6,7 @@ Here you should implement and evaluate the Conditional Gaussian classifier.
 
 import data
 import numpy as np
+import scipy.stats
 # Import pyplot - plt.imshow is useful!
 import matplotlib.pyplot as plt
 
@@ -17,18 +18,37 @@ def compute_mean_mles(train_data, train_labels):
     The ith row will correspond to the mean estimate for digit class i
     '''
     means = np.zeros((10, 64))
+    N = np.zeros(10) # count of number of classes
+    for i in range(0, len(train_data)): # dangerous if too much train data
+        k = train_labels[i]
+        means[k] = means[k] + train_data[i]
+        N[k] = N[k] + 1
+    for i in range(0, len(means)):
+        means[i] = means[i]/N[i]
     # Compute means
     return means
 
-def compute_sigma_mles(train_data, train_labels):
+def compute_sigma_mles(train_data, train_labels, train_means):
     '''
     Compute the covariance estimate for each digit class
 
     Should return a three dimensional numpy array of shape (10, 64, 64)
     consisting of a covariance matrix for each digit class 
     '''
+    D = 64
     covariances = np.zeros((10, 64, 64))
+    N = np.zeros(10)
     # Compute covariances
+    for i in range(0, len(train_data)): # dangerous if too much train data
+        k = train_labels[i]
+        error = train_means[k] - train_labels[i]
+        error = error.reshape(64,1) # reshape into column vector
+        covariances[k] = covariances[k] + error*error.transpose()
+        N[k] = N[k] + 1
+    for i in range(0, len(covariances)):
+        covariances[i] = covariances[i]/N[i]
+    for i in range(0, len(covariances)):
+        covariances[i] = covariances[i] + 0.01*np.eye(D)
     return covariances
 
 def generative_likelihood(digits, means, covariances):
@@ -40,7 +60,19 @@ def generative_likelihood(digits, means, covariances):
     '''
     return None
 
-def conditional_likelihood(digits, means, covariances):
+def multivariate_normal(x, mean, cov_inv, cov_det):
+    d = len(x)
+    error = x-mean
+    error = error.reshape(d, 1) # reshape into column vec
+    return (np.exp(-0.5*np.dot(np.dot(error.transpose(),cov_inv), error))/np.sqrt(cov_det*(2*np.pi)**d))[0][0]
+
+def log_multivariate_normal(x, mean, cov_inv, cov_det):
+    d = len(x)
+    error = x-mean
+    error = error.reshape(d, 1) # reshape into column vec
+    return ((-0.5*np.dot(np.dot(error.transpose(),cov_inv), error)) - 0.5*np.log(cov_det*(2*np.pi)**d))[0][0]
+
+def conditional_likelihood(digits, means, covariances, prior = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]):
     '''
     Compute the conditional likelihood:
 
@@ -48,8 +80,23 @@ def conditional_likelihood(digits, means, covariances):
 
     This should be a numpy array of shape (n, 10)
     Where n is the number of datapoints and 10 corresponds to each digit class
+
+    Note: by bayes rule, p(y|x) = p(x|y) * p(y) / p(x). (y is the class).
+    We ignore the denominator. 
+
     '''
-    return None
+    numClasses = len(means)
+    n = len(digits)
+    y = np.zeros((n,numClasses))
+    cov_inv = np.zeros((10, 64, 64))
+    cov_det = np.zeros(len(covariances))
+    for i in range(0, len(covariances)):
+        cov_inv[i] = np.linalg.inv(covariances[i])
+        cov_det[i] = np.linalg.det(covariances[i])
+    for i in range(0, n):
+        for j in range(0, numClasses):
+            y[i][j] = log_multivariate_normal(digits[i], means[j], cov_inv[j], cov_det[j]) + np.log(prior[j])
+    return y
 
 def avg_conditional_likelihood(digits, labels, means, covariances):
     '''
@@ -60,9 +107,15 @@ def avg_conditional_likelihood(digits, labels, means, covariances):
     i.e. the average log likelihood that the model assigns to the correct class label
     '''
     cond_likelihood = conditional_likelihood(digits, means, covariances)
-
-    # Compute as described above and return
-    return None
+    N = np.zeros(10) # count number of each class
+    logy_avg = np.zeros(10)
+    for i in range(0, len(digits)):
+        k = labels[i]
+        logy_avg[k] = logy_avg[k] + cond_likelihood[i][k]
+        N[k] = N[k] + 1
+    for i in range(0, len(logy_avg)):
+        logy_avg[i] = logy_avg[i] / N[i]
+    return logy_avg
 
 def classify_data(digits, means, covariances):
     '''
@@ -72,13 +125,29 @@ def classify_data(digits, means, covariances):
     # Compute and return the most likely class
     pass
 
+def test_multivariate_functions():
+    x = np.random.rand(5)
+    mu = np.random.rand(5)
+    cov = np.eye(5)
+    cov_inv = np.linalg.inv(cov)
+    cov_det = np.linalg.det(cov)
+    assert abs(scipy.stats.multivariate_normal.pdf(x, mean=mu, cov=cov) - multivariate_normal(x, mu, cov_inv, cov_det)) < 1e-10
+    assert abs(np.log(scipy.stats.multivariate_normal.pdf(x, mean=mu, cov=cov)) - log_multivariate_normal(x, mu, cov_inv, cov_det)) < 1e-10
+
+
+def run_tests():
+    test_multivariate_functions()
+
 def main():
+    run_tests()
+
     train_data, train_labels, test_data, test_labels = data.load_all_data('data')
 
     # Fit the model
     means = compute_mean_mles(train_data, train_labels)
-    covariances = compute_sigma_mles(train_data, train_labels)
-
+    covariances = compute_sigma_mles(train_data, train_labels, means)
+    y = avg_conditional_likelihood(train_data, train_labels, means, covariances)
+    print(y)
     # Evaluation
 
 if __name__ == '__main__':
