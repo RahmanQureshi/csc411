@@ -40,8 +40,8 @@ def compute_sigma_mles(train_data, train_labels, train_means):
     N = np.zeros(10)
     # Compute covariances
     for i in range(0, len(train_data)): # dangerous if too much train data
-        k = train_labels[i]
-        error = train_means[k] - train_labels[i]
+        k = int(train_labels[i])
+        error = train_means[k] - train_data[i]
         error = error.reshape(64,1) # reshape into column vector
         covariances[k] = covariances[k] + error*error.transpose()
         N[k] = N[k] + 1
@@ -57,6 +57,9 @@ def generative_likelihood(digits, means, covariances):
         log p(x|y,mu,Sigma)
 
     Should return an n x 10 numpy array 
+
+    Student note: this was meant to be used in conditional_likelihood
+    but I just computed it manually.
     '''
     return None
 
@@ -106,16 +109,20 @@ def avg_conditional_likelihood(digits, labels, means, covariances):
 
     i.e. the average log likelihood that the model assigns to the correct class label
     '''
-    cond_likelihood = conditional_likelihood(digits, means, covariances)
+    cond_likelihood = conditional_likelihood(digits, means, covariances) # n data x 10 classes
     N = np.zeros(10) # count number of each class
-    logy_avg = np.zeros(10)
+    logy_avg = np.zeros((10, 10))
     for i in range(0, len(digits)):
         k = labels[i]
-        logy_avg[k] = logy_avg[k] + cond_likelihood[i][k]
+        logy_avg[k] = logy_avg[k] + cond_likelihood[i]
         N[k] = N[k] + 1
     for i in range(0, len(logy_avg)):
         logy_avg[i] = logy_avg[i] / N[i]
     return logy_avg
+
+def accuracy(predictions, labels):
+    assert(len(predictions) == len(labels))
+    return float(sum([1 if predictions[i]==labels[i] else 0 for i in range(0, len(predictions))]))/float(len(predictions))
 
 def classify_data(digits, means, covariances):
     '''
@@ -123,7 +130,7 @@ def classify_data(digits, means, covariances):
     '''
     cond_likelihood = conditional_likelihood(digits, means, covariances)
     # Compute and return the most likely class
-    pass
+    return np.argmax(cond_likelihood, axis=1)
 
 def test_multivariate_functions():
     x = np.random.rand(5)
@@ -134,6 +141,14 @@ def test_multivariate_functions():
     assert abs(scipy.stats.multivariate_normal.pdf(x, mean=mu, cov=cov) - multivariate_normal(x, mu, cov_inv, cov_det)) < 1e-10
     assert abs(np.log(scipy.stats.multivariate_normal.pdf(x, mean=mu, cov=cov)) - log_multivariate_normal(x, mu, cov_inv, cov_det)) < 1e-10
 
+def eigen(A):
+    """ Wrapper arround np.linalg.eig that additionally sorts the eigenvalues and eigenvectors
+        with decending eigenvalue size (e.g. biggest evalue first).
+    """
+    evalues, evectors = np.linalg.eig(A)
+    zipped = zip(evalues, evectors)
+    zipped.sort(reverse=True)
+    return [e[0] for e in zipped], [e[1] for e in zipped]
 
 def run_tests():
     test_multivariate_functions()
@@ -146,9 +161,34 @@ def main():
     # Fit the model
     means = compute_mean_mles(train_data, train_labels)
     covariances = compute_sigma_mles(train_data, train_labels, means)
+
+    # Evaluation
+    print("Average log likelihood for train:")
     y = avg_conditional_likelihood(train_data, train_labels, means, covariances)
     print(y)
-    # Evaluation
+    print("Average log likelihood for test:")
+    ytest = avg_conditional_likelihood(test_data, test_labels, means, covariances)
+    print(ytest)
+
+    # Accuracy
+    train_predictions = classify_data(train_data, means, covariances)
+    train_accuracy = accuracy(train_predictions, train_labels)
+    print("Accuracy on training set: %f" % train_accuracy)
+    test_predictions = classify_data(test_data, means, covariances)
+    test_accuracy = accuracy(test_predictions, test_labels)
+    print("Accuracy on test set: %f" % test_accuracy)
+
+    print("Computing eigenvalues")
+    imgs = []
+    for i, cov in enumerate(covariances):
+        evalues, evectors = eigen(cov)
+        print("Maximum evalue for %dth class: %f, second biggest: %f." % (i+1, evalues[0], evalues[1]))
+        topevec = evectors[0]
+        topevec = np.array([abs(e) for e in topevec])
+        plt.subplot(2,5, i+1)
+        plt.imshow(topevec.reshape(8,8))
+        #plt.imshow(cov, cmap='Greys')
+    plt.show()
 
 if __name__ == '__main__':
     main()
