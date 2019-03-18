@@ -110,14 +110,12 @@ def avg_conditional_likelihood(digits, labels, means, covariances):
     i.e. the average log likelihood that the model assigns to the correct class label
     '''
     cond_likelihood = conditional_likelihood(digits, means, covariances) # n data x 10 classes
-    N = np.zeros(10) # count number of each class
-    logy_avg = np.zeros((10, 10))
+    N = 0 # count number of each class
+    logy_avg = 0 
     for i in range(0, len(digits)):
         k = labels[i]
-        logy_avg[k] = logy_avg[k] + cond_likelihood[i]
-        N[k] = N[k] + 1
-    for i in range(0, len(logy_avg)):
-        logy_avg[i] = logy_avg[i] / N[i]
+        logy_avg = logy_avg + cond_likelihood[i][k]
+    logy_avg = logy_avg / len(labels)
     return logy_avg
 
 def accuracy(predictions, labels):
