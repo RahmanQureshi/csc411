@@ -51,29 +51,58 @@ def compute_sigma_mles(train_data, train_labels, train_means):
         covariances[i] = covariances[i] + 0.01*np.eye(D)
     return covariances
 
+def multivariate_normal(x, mean, cov, cov_inv, cov_det):
+    d = len(x)
+    error = x-mean
+    error = error.reshape(d, 1) # reshape into column vec
+    return (np.exp(-0.5*np.dot(np.dot(error.transpose(),cov_inv), error))/np.sqrt(cov_det*(2*np.pi)**d))[0][0]
+
+def log_multivariate_normal(x, mean, cov, cov_inv, cov_det):
+    d = len(x)
+    error = x-mean
+    error = error.reshape(d, 1) # reshape into column vec
+    return (-0.5*np.dot(np.dot(error.transpose(),cov_inv), error) - 0.5*np.log(cov_det) - 0.5*d*np.log(2*np.pi))[0][0]
+    #return np.log(scipy.stats.multivariate_normal.pdf(x, mean=mean, cov=cov))
+
+def generative_likelihood_not_log(digits, means, covariances):
+    '''
+    Compute the generative log-likelihood:
+        log p(x|y,mu,Sigma)
+
+    Should return an n x 10 numpy array 
+    '''
+    numClasses = len(means)
+    n = len(digits)
+    pxgiveny = np.zeros((n,numClasses))
+    cov_inv = np.zeros((10, 64, 64))
+    cov_det = np.zeros(len(covariances))
+    for i in range(0, len(covariances)):
+        cov_inv[i] = np.linalg.inv(covariances[i])
+        cov_det[i] = np.linalg.det(covariances[i])
+    for i in range(0, n):
+        for j in range(0, numClasses):
+            pxgiveny[i][j] = multivariate_normal(digits[i], means[j], covariances[j], cov_inv[j], cov_det[j]) 
+    return pxgiveny
+
 def generative_likelihood(digits, means, covariances):
     '''
     Compute the generative log-likelihood:
         log p(x|y,mu,Sigma)
 
     Should return an n x 10 numpy array 
-
-    Student note: this was meant to be used in conditional_likelihood
-    but I just computed it manually.
     '''
-    return None
-
-def multivariate_normal(x, mean, cov_inv, cov_det):
-    d = len(x)
-    error = x-mean
-    error = error.reshape(d, 1) # reshape into column vec
-    return (np.exp(-0.5*np.dot(np.dot(error.transpose(),cov_inv), error))/np.sqrt(cov_det*(2*np.pi)**d))[0][0]
-
-def log_multivariate_normal(x, mean, cov_inv, cov_det):
-    d = len(x)
-    error = x-mean
-    error = error.reshape(d, 1) # reshape into column vec
-    return ((-0.5*np.dot(np.dot(error.transpose(),cov_inv), error)) - 0.5*np.log(cov_det*(2*np.pi)**d))[0][0]
+    numClasses = len(means)
+    n = len(digits)
+    logpxgiveny = np.zeros((n,numClasses))
+    cov_inv = np.zeros((10, 64, 64))
+    cov_det = np.zeros(len(covariances))
+    for i in range(0, len(covariances)):
+        cov_inv[i] = np.linalg.inv(covariances[i])
+        cov_det[i] = np.linalg.det(covariances[i])
+    for i in range(0, n):
+        for j in range(0, numClasses):
+            logpxgiveny[i][j] = log_multivariate_normal(digits[i], means[j], covariances[j], cov_inv[j], cov_det[j]) 
+    return logpxgiveny
 
 def conditional_likelihood(digits, means, covariances, prior = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]):
     '''
@@ -85,21 +114,23 @@ def conditional_likelihood(digits, means, covariances, prior = [0.1, 0.1, 0.1, 0
     Where n is the number of datapoints and 10 corresponds to each digit class
 
     Note: by bayes rule, p(y|x) = p(x|y) * p(y) / p(x). (y is the class).
-    We ignore the denominator. 
 
+    p(x) = sum of p(x,k) over all k
+    p(x) = sum of p(x|y=k)*p(y=k)
+    This is logged.
     '''
     numClasses = len(means)
     n = len(digits)
-    y = np.zeros((n,numClasses))
-    cov_inv = np.zeros((10, 64, 64))
-    cov_det = np.zeros(len(covariances))
-    for i in range(0, len(covariances)):
-        cov_inv[i] = np.linalg.inv(covariances[i])
-        cov_det[i] = np.linalg.det(covariances[i])
+    logpygivenx = np.zeros((n,numClasses))
+    logpxgiveny = generative_likelihood(digits, means, covariances)
+    pxgiveny = generative_likelihood_not_log(digits, means, covariances) # totally duplicate and unnecessary to calculate both of these
+    logpx = np.zeros(n)
+    for i in range(0, n):
+        logpx[i] = np.log(np.dot(pxgiveny[i],prior))
     for i in range(0, n):
         for j in range(0, numClasses):
-            y[i][j] = log_multivariate_normal(digits[i], means[j], cov_inv[j], cov_det[j]) + np.log(prior[j])
-    return y
+            logpygivenx[i][j] = logpxgiveny[i][j] + np.log(prior[j]) - logpx[i]
+    return logpygivenx
 
 def avg_conditional_likelihood(digits, labels, means, covariances):
     '''
@@ -115,7 +146,7 @@ def avg_conditional_likelihood(digits, labels, means, covariances):
     for i in range(0, len(digits)):
         k = labels[i]
         logy_avg = logy_avg + cond_likelihood[i][k]
-    logy_avg = logy_avg / len(labels)
+    logy_avg = logy_avg / float(len(labels))
     return logy_avg
 
 def accuracy(predictions, labels):
@@ -136,17 +167,16 @@ def test_multivariate_functions():
     cov = np.eye(5)
     cov_inv = np.linalg.inv(cov)
     cov_det = np.linalg.det(cov)
-    assert abs(scipy.stats.multivariate_normal.pdf(x, mean=mu, cov=cov) - multivariate_normal(x, mu, cov_inv, cov_det)) < 1e-10
-    assert abs(np.log(scipy.stats.multivariate_normal.pdf(x, mean=mu, cov=cov)) - log_multivariate_normal(x, mu, cov_inv, cov_det)) < 1e-10
+    assert abs(scipy.stats.multivariate_normal.pdf(x, mean=mu, cov=cov) - multivariate_normal(x, mu, cov, cov_inv, cov_det)) < 1e-10
+    assert abs(np.log(scipy.stats.multivariate_normal.pdf(x, mean=mu, cov=cov)) - log_multivariate_normal(x, mu, cov, cov_inv, cov_det)) < 1e-10
 
-def eigen(A):
+def top_eigen(A):
     """ Wrapper arround np.linalg.eig that additionally sorts the eigenvalues and eigenvectors
         with decending eigenvalue size (e.g. biggest evalue first).
     """
     evalues, evectors = np.linalg.eig(A)
-    zipped = zip(evalues, evectors)
-    zipped.sort(reverse=True)
-    return [e[0] for e in zipped], [e[1] for e in zipped]
+    index = evalues.argmax();
+    return evectors[:, index]
 
 def run_tests():
     test_multivariate_functions()
@@ -179,12 +209,9 @@ def main():
     print("Computing eigenvalues")
     imgs = []
     for i, cov in enumerate(covariances):
-        evalues, evectors = eigen(cov)
-        print("Maximum evalue for %dth class: %f, second biggest: %f." % (i+1, evalues[0], evalues[1]))
-        topevec = evectors[0]
-        topevec = np.array([abs(e) for e in topevec])
+        top_evector = top_eigen(cov)
         plt.subplot(2,5, i+1)
-        plt.imshow(topevec.reshape(8,8))
+        plt.imshow(top_evector.reshape(8,8))
         #plt.imshow(cov, cmap='Greys')
     plt.show()
 
