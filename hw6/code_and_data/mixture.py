@@ -214,8 +214,10 @@ class Model(object):
         a call to self.compute_posterior."""
 
         ######################## Your code here #########################
-        pass
-
+        posterior = self.compute_posterior(X, M) # N x K matrix
+        predicted_labels = np.argmax(posterior, axis=1) # N vector
+        means = self.params.theta[predicted_labels]
+        return means
 
         #################################################################
         
@@ -305,6 +307,7 @@ def train_with_em(num_components=100, num_steps=50, prior=None, draw_every=1):
     loglik_vals = []
 
     for i in range(num_steps):
+        print("Step %d" % i)
         # E-step
         R = model.compute_posterior(X)
 

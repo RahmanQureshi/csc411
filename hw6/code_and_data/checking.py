@@ -131,8 +131,13 @@ def check_e_step():
 if __name__ == '__main__':
     check_e_step()
     check_m_step()
+    print("Part 1 values:")
     mixture.print_part_1_values()
-    mixture.train_from_labels()
+    print("Part 2 values:")
+    mixture.print_part_2_values() # uses train_from_labels 
+
+    #print("Training with em()")
+    #mixture.train_with_em()
     pylab.show()
 
 
