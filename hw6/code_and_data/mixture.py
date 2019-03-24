@@ -188,7 +188,10 @@ class Model(object):
 
         ######################## Your code here #########################
         
-
+        # zero out the entries of X and 1.-X that are unobserved
+        log_p_x_given_z = np.dot(np.multiply(X, M), np.log(self.params.theta).T) + \
+                          np.dot(np.multiply((1. - X), M), np.log(1. - self.params.theta).T)
+        log_p_z_x = log_p_x_given_z + np.log(self.params.pi)
 
         #################################################################
             
