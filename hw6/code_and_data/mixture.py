@@ -159,8 +159,8 @@ class Model(object):
         ######################## Your code here #########################
         a = self.prior.a_pixels
         b = self.prior.b_pixels
-        sumR = np.sum(R, axis=0) + (a-b) # sum over all examples (e.g. sum columns)
-        XprimeR = np.dot(X.transpose(),R) 
+        sumR = np.sum(R, axis=0) + a + b - 2 # sum over all examples (e.g. sum columns)
+        XprimeR = np.dot(X.transpose(),R) + a - 1
         # need to divide ith column of XprimeR by ith index of sumR
         # in numpy, elements of column 0 are divided by the divisor's element 0.
         theta = np.true_divide(XprimeR, sumR).transpose()

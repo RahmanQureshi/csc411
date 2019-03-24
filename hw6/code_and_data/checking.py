@@ -3,6 +3,8 @@ import numpy as np
 import mixture
 import util
 
+import pylab
+
 
 
 def multinomial_entropy(p):
@@ -129,6 +131,9 @@ def check_e_step():
 if __name__ == '__main__':
     #check_e_step()
     check_m_step()
+    mixture.print_part_1_values()
+    mixture.train_from_labels()
+    pylab.show()
 
 
 
