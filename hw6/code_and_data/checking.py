@@ -140,8 +140,9 @@ if __name__ == '__main__':
     model = mixture.train_from_labels()
     print("log_probs_by_digit_class")
     mixture.print_log_probs_by_digit_class(model)
-    #print("Training with em()")
-    #mixture.train_with_em()
+    
+    print("Training with em()")
+    mixture.train_with_em()
 
     pylab.show()
 
