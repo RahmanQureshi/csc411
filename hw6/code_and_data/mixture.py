@@ -215,9 +215,7 @@ class Model(object):
 
         ######################## Your code here #########################
         posterior = self.compute_posterior(X, M) # N x K matrix
-        means = np.zeros(X.shape)
-        for i in range(0, len(means)):
-            means[i, :] = np.dot(self.params.theta.T, posterior[i])
+        means = np.array([np.dot(self.params.theta.T, post) for post in posterior])
         return means
 
         #################################################################
