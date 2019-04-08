@@ -1,0 +1,42 @@
+Tree with max depth=1, criterion=gini: validation_score=0.697959
+Tree with max depth=1, criterion=entropy: validation_score=0.655102
+Tree with max depth=2, criterion=gini: validation_score=0.730612
+Tree with max depth=2, criterion=entropy: validation_score=0.610204
+Tree with max depth=3, criterion=gini: validation_score=0.728571
+Tree with max depth=3, criterion=entropy: validation_score=0.681633
+Tree with max depth=4, criterion=gini: validation_score=0.732653
+Tree with max depth=4, criterion=entropy: validation_score=0.724490
+Top trees:
+[(-0.7326530612244898, DecisionTreeClassifier(class_weight=None, criterion='gini', max_depth=4,
+            max_features=None, max_leaf_nodes=None,
+            min_impurity_decrease=0.0, min_impurity_split=None,
+            min_samples_leaf=1, min_samples_split=2,
+            min_weight_fraction_leaf=0.0, presort=False, random_state=None,
+            splitter='best')), (-0.7306122448979592, DecisionTreeClassifier(class_weight=None, criterion='gini', max_depth=2,
+            max_features=None, max_leaf_nodes=None,
+            min_impurity_decrease=0.0, min_impurity_split=None,
+            min_samples_leaf=1, min_samples_split=2,
+            min_weight_fraction_leaf=0.0, presort=False, random_state=None,
+            splitter='best'))]
+Top tree test set score=0.718941
+Second tree test set score=0.718941
+Information gain by splitting on trump:
+0.0304843009658
+Information gain by splitting on korea:
+0.0182675975452
+Information gain by splitting on hillary:
+0.0410532561138
+Information gain by splitting on the:
+0.0457681727899
+Information gain by splitting on economic:
+1.35102190722e-06
+Information gain by splitting on and:
+0.00959761721536
+Information gain by splitting on election:
+0.000185478712508
+Information gain by splitting on america:
+0.00799189139389
+Information gain by splitting on clean:
+0.00225205884386
+Information gain by splitting on black:
+0.0112867708304
