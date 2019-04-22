@@ -60,7 +60,7 @@ def maxQ(Q, s):
     optimal_a = optimalAction(Q, s)
     return Q[s][optimal_a]
 
-def value_iteration(transition_pmf, reward_pmf, states, actions, gamma=0.9, num_iter = 100, policy=None):
+def value_iteration(transition_pmf, reward_pmf, states, actions, gamma=0.9, num_iter = 1000, policy=None):
     """ Finds the optimal Q function using value iteration.
         If given a policy, finds the Q function associated with that policy.
         Policy is a map from state to action.
@@ -82,6 +82,45 @@ def value_iteration(transition_pmf, reward_pmf, states, actions, gamma=0.9, num_
     return Q
 
 if __name__ == "__main__":
-    print("Hello, world!")
-    Q = value_iteration(transition_pmf, reward_pmf, states, actions)
+    pol_1 = {States.LOW_BANK_ACCOUNT: Actions.SAVE, States.HIGH_BANK_ACCOUNT: Actions.SAVE} # Saving policy
+    pol_2 = {States.LOW_BANK_ACCOUNT: Actions.SPEND, States.HIGH_BANK_ACCOUNT: Actions.SPEND} # Spending policy
+
+    gamma = 0.9
+    num_iter = 1000
+    Q = value_iteration(transition_pmf, reward_pmf, states, actions, gamma, num_iter)
+    Q = [[Q[s][a] for a in actions] for s in states] # convert it to the form as per the solution
     print(Q)
+    print 'Optimal policy:', np.argmax(Q,axis = 1)
+
+
+    # Varying discount factor (gamma) and computing the optimal action-value and value function, and policy
+    gamma_set = np.linspace(0,0.99,100)
+    Q_res = []
+    V_res = []
+    pi_res = []
+    for gamma in gamma_set:
+        Q = value_iteration(transition_pmf, reward_pmf, states, actions, gamma, num_iter) #, policy=pol_2)
+        Q = np.array([np.array([Q[s][a] for a in actions]) for s in states]) # convert it to the form as per the solution
+        V = np.max(Q,axis = 1)
+        pi_greedy = np.argmax(Q,axis = 1)
+
+        Q_res.append(Q*(1. - gamma))
+        V_res.append(V*(1. - gamma))
+        pi_res.append(pi_greedy)
+
+    subplot(1,2,1)
+    plot(gamma_set, np.array(pi_res)[:,0],'o')
+    xlabel('$\gamma$')
+    ylabel('Policy at state $s_1$')
+    ylim((-0.05,1.05))
+    subplot(1,2,2)
+    plot(gamma_set, np.array(pi_res)[:,1],'o')
+    ylim((-0.05,1.05))
+    xlabel('$\gamma$')
+    ylabel('Policy at state $s_2$')
+    figure()
+    plot(gamma_set, V_res)
+    legend(['State 1', 'State 2'])
+    xlabel('$\gamma$')
+    ylabel('(Normalized) optimal value function')
+    show()
