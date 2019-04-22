@@ -3,6 +3,7 @@
 
 import numpy as np
 from matplotlib.pyplot import *
+import time
 
 
 def value_iteration(P, r, gamma = 0., policy = None, iter_no = None):
@@ -54,6 +55,8 @@ gamma = 0.9
 pol_1 = np.array([0, 0]) # Saving policy
 pol_2 = np.array([1,1]) # Spending policy
 
+start = time.time()
+
 Q = value_iteration(P,r, gamma) #, policy=pol_2)
 print 'Q:', Q
 print 'Optimal policy:', np.argmax(Q,axis = 1)
@@ -88,4 +91,8 @@ plot(gamma_set, V_res)
 legend(['State 1', 'State 2'])
 xlabel('$\gamma$')
 ylabel('(Normalized) optimal value function')
+
+end = time.time()
+print("DT: %f"  % (end-start))
+
 show()

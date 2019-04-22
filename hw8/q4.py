@@ -1,6 +1,7 @@
 from collections import defaultdict
 import numpy as np
 from matplotlib.pyplot import *
+import time
 
 # state enumeration
 class States:
@@ -85,6 +86,8 @@ if __name__ == "__main__":
     pol_1 = {States.LOW_BANK_ACCOUNT: Actions.SAVE, States.HIGH_BANK_ACCOUNT: Actions.SAVE} # Saving policy
     pol_2 = {States.LOW_BANK_ACCOUNT: Actions.SPEND, States.HIGH_BANK_ACCOUNT: Actions.SPEND} # Spending policy
 
+    start = time.time()
+
     gamma = 0.9
     num_iter = 1000
     Q = value_iteration(transition_pmf, reward_pmf, states, actions, gamma, num_iter)
@@ -123,4 +126,6 @@ if __name__ == "__main__":
     legend(['State 1', 'State 2'])
     xlabel('$\gamma$')
     ylabel('(Normalized) optimal value function')
+    end = time.time()
+    print("DT: %f"  % (end-start))
     show()
