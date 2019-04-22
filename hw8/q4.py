@@ -60,15 +60,25 @@ def maxQ(Q, s):
     optimal_a = optimalAction(Q, s)
     return Q[s][optimal_a]
 
-def value_iteration(transition_pmf, reward_pmf, states, actions, gamma=0.9, num_iter = 100):
+def value_iteration(transition_pmf, reward_pmf, states, actions, gamma=0.9, num_iter = 100, policy=None):
+    """ Finds the optimal Q function using value iteration.
+        If given a policy, finds the Q function associated with that policy.
+        Policy is a map from state to action.
+    """
+
     # Q(state, action) with default values of 0
     Q = defaultdict(lambda: defaultdict(int))
     for i in xrange(0, num_iter):
+        Qtemp = Q
         for state in states:
             for action in actions:
-                expected_current_reward = sum([r*p for r,p in reward_pmf[state][action]])
+                if policy == None:
+                    expected_current_reward = sum([r*p for r,p in reward_pmf[state][action]])
+                else:
+                    expected_current_reward = sum([r*p for r,p in reward_pmf[state][policy[state]]])
                 discounted_future_reward = gamma * sum([p*maxQ(Q, s) for s,p in transition_pmf[state][action]])
-                Q[state][action] = expected_current_reward + discounted_future_reward
+                Qtemp[state][action] = expected_current_reward + discounted_future_reward
+        Q = Qtemp
     return Q
 
 if __name__ == "__main__":
